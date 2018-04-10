@@ -12,36 +12,41 @@ class TodoListViewController: UITableViewController {
 
     var itemArray = [Item]()
     
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
+    //let defaults = UserDefaults.standard
+    
+    
+    //MARK - ViewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
         
-        let newItem2 = Item()
-        newItem2.title = "Buy Eggos"
-        itemArray.append(newItem2)
+        print(dataFilePath)
         
-        let newItem3 = Item()
-        newItem3.title = "Destroy Demogorgon"
-        itemArray.append(newItem3)
+//        let newItem = Item()
+//        newItem.title = "Find Mike"
+//        itemArray.append(newItem)
+//        
+//        let newItem2 = Item()
+//        newItem2.title = "Buy Eggos"
+//        itemArray.append(newItem2)
+//        
+//        let newItem3 = Item()
+//        newItem3.title = "Destroy Demogorgon"
+//        itemArray.append(newItem3)
         
         
-        if let items = UserDefaults.standard.array(forKey: "TodoListArray") as? [Item] {
-          itemArray = items
-        }
+        loadItems()
         
     }
 
     //MARK - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         
         let item = itemArray[indexPath.row]
-        
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+    
         cell.textLabel?.text = item.title
         
         cell.accessoryType = item.done ? .checkmark: .none
@@ -60,14 +65,15 @@ class TodoListViewController: UITableViewController {
         
         //print(itemArray[indexPath.row])
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        saveItems()
         
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+//        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
+//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
+//        }else{
+//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
+//        }
         
-        tableView.reloadData()
+        //tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     //MARK - Add new items
@@ -83,9 +89,8 @@ class TodoListViewController: UITableViewController {
             
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
+                //self.defaults.set(self.itemArray, forKey: "TodoListArray")
         }
         
         alert.addTextField { (alertTextField) in
@@ -96,7 +101,31 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    //MARK - Model Manipulation Methods
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        }catch{
+            print("Error encoding item array, \(error)")
+        }
+        self.tableView.reloadData()
+    }
     
+    func loadItems() {
+        
+        if let data = try? Data(contentsOf: dataFilePath!) {
+          let decoder = PropertyListDecoder()
+            do{
+            itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error printing itemArray, \(error).")
+            }
+        }
+        
+    }
 
 }
 
